@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { getPokemonList, getPokemonDetails } from "./services/pokemonApi.js";
+import usePokemon from "./hooks/usePokemon.js";
+import useFavorites from "./hooks/useFavorites.js";
 
 import SearchBar from "./components/SearchBar.jsx";
 import TypeFilter from "./components/TypeFilter.jsx";
@@ -9,107 +10,52 @@ import PokemonList from "./components/PokemonList.jsx";
 import "./App.css";
 
 function App() {
-  // Estados de la aplicación
-  const [pokemonList, setPokemonList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    pokemonList,
+    loading,
+    error,
+    failedCount,
+    retry,
+  } = usePokemon();
+
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const [showFavorites, setShowFavorites] = useState(false);
 
-  // Cargar los Pokémon al iniciar la aplicación
-  useEffect(() => {
-    let active = true;
+  const types = useMemo(
+    () => [...new Set(pokemonList.flatMap((pokemon) => pokemon.types))].sort(),
+    [pokemonList]
+  );
 
-    async function loadPokemons() {
-      try {
-        setLoading(true);
-        setError("");
-
-        const list = await getPokemonList();
-        const loadedPokemon = [];
-
-        const batchSize = 20;
-
-        for (
-          let index = 0;
-          index < list.results.length;
-          index += batchSize
-        ) {
-          const batch = list.results.slice(index, index + batchSize);
-
-          const results = await Promise.allSettled(
-            batch.map((pokemon) => getPokemonDetails(pokemon.url))
-          );
-
-          results.forEach((result) => {
-            if (result.status === "fulfilled") {
-              const data = result.value;
-
-              loadedPokemon.push({
-                id: data.id,
-                name: data.name,
-                image:
-                  data.sprites.other["official-artwork"].front_default ||
-                  data.sprites.front_default,
-                types: data.types.map((item) => item.type.name),
-                height: data.height / 10,
-                weight: data.weight / 10,
-                attack:
-                  data.stats.find((stat) => stat.stat.name === "attack")
-                    ?.base_stat || 0,
-              });
-            }
-          });
-        }
-
-        if (active) {
-          if (loadedPokemon.length === 0) {
-            throw new Error("No se ha podido cargar ningún Pokémon.");
-          }
-
-          loadedPokemon.sort((a, b) => a.id - b.id);
-          setPokemonList(loadedPokemon);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err.message || "Ha ocurrido un error.");
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadPokemons();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Obtener todos los tipos disponibles
-  const types = [
-    ...new Set(pokemonList.flatMap((pokemon) => pokemon.types)),
-  ].sort();
-
-  // Filtrar Pokémon según la búsqueda y el tipo
-  const filteredPokemon = pokemonList.filter((pokemon) => {
+  const filteredPokemon = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const numericQuery = query.replace(/^#/, "");
 
-    const matchesName = pokemon.name.includes(query);
+    return pokemonList.filter((pokemon) => {
+      const matchesName = pokemon.name.includes(query);
+      const matchesNumber =
+        /^\d+$/.test(numericQuery) &&
+        String(pokemon.id) === String(Number(numericQuery));
+      const matchesType =
+        selectedType === "all" || pokemon.types.includes(selectedType);
+      const matchesFavorite =
+        !showFavorites || favorites.includes(pokemon.id);
 
-    const matchesNumber =
-      query !== "" &&
-      String(pokemon.id) === query.replace("#", "");
+      return (
+        (matchesName || matchesNumber) &&
+        matchesType &&
+        matchesFavorite
+      );
+    });
+  }, [pokemonList, search, selectedType, showFavorites, favorites]);
 
-    const matchesType =
-      selectedType === "all" ||
-      pokemon.types.includes(selectedType);
-
-    return (matchesName || matchesNumber) && matchesType;
-  });
+  function clearFilters() {
+    setSearch("");
+    setSelectedType("all");
+    setShowFavorites(false);
+  }
 
   return (
     <main className="app">
@@ -123,7 +69,7 @@ function App() {
         <p>Descubre y explora los primeros 151 Pokémon.</p>
       </header>
 
-      <section className="controls">
+      <section className="controls" aria-label="Controles de búsqueda">
         <SearchBar search={search} setSearch={setSearch} />
 
         <TypeFilter
@@ -133,19 +79,22 @@ function App() {
         />
 
         <button
-          className="clear-button"
-          onClick={() => {
-            setSearch("");
-            setSelectedType("all");
-          }}
+          className={`favorites-filter ${showFavorites ? "is-active" : ""}`}
+          type="button"
+          aria-pressed={showFavorites}
+          onClick={() => setShowFavorites((current) => !current)}
         >
+          ♥ Favoritos ({favorites.length})
+        </button>
+
+        <button className="clear-button" type="button" onClick={clearFilters}>
           Limpiar filtros
         </button>
       </section>
 
-      <section className="results">
+      <section className="results" aria-live="polite">
         <div className="results-heading">
-          <h2>Pokémon</h2>
+          <h2>{showFavorites ? "Mis favoritos" : "Pokémon"}</h2>
 
           {!loading && !error && (
             <span>{filteredPokemon.length} resultados</span>
@@ -153,22 +102,33 @@ function App() {
         </div>
 
         {loading && (
-          <p className="status-message">
+          <p className="status-message" role="status">
             Cargando Pokémon...
           </p>
         )}
 
         {error && (
-          <div className="error-message">
+          <div className="error-message" role="alert">
             <p>{error}</p>
-            <button onClick={() => window.location.reload()}>
+            <button type="button" onClick={retry} disabled={loading}>
               Volver a intentar
             </button>
           </div>
         )}
 
+        {!loading && !error && failedCount > 0 && (
+          <p className="partial-warning" role="status">
+            Se han podido cargar {pokemonList.length} Pokémon. No se han podido
+            obtener los datos de {failedCount}.
+          </p>
+        )}
+
         {!loading && !error && (
-          <PokemonList pokemonList={filteredPokemon} />
+          <PokemonList
+            pokemonList={filteredPokemon}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
+          />
         )}
       </section>
 
