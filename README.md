@@ -50,3 +50,12 @@ Con `Promise.allSettled()` puedo conservar los Pokémon cuyas peticiones han fun
 
 He elegido esta solución para evitar que un fallo puntual impida mostrar el resto de los resultados.
 
+### 2. Hooks personalizados y separación de responsabilidades
+
+He separado la lógica de carga de Pokémon en un hook personalizado llamado `usePokemon` y la gestión de favoritos en otro llamado `useFavorites`.
+
+Una alternativa habría sido mantener toda la lógica dentro de `App.jsx`, pero eso habría hecho que el componente principal tuviera demasiadas responsabilidades.
+
+He elegido esta organización porque permite separar la lógica de los datos de la interfaz y facilita el mantenimiento del proyecto.
+
+Además, `usePokemon` utiliza `AbortController` para cancelar las peticiones cuando el efecto se limpia, evitando mantener solicitudes que ya no son necesarias.
