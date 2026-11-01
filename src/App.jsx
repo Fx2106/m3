@@ -5,6 +5,10 @@ import useFavorites from "./hooks/useFavorites.js";
 
 import SearchBar from "./components/SearchBar.jsx";
 import TypeFilter from "./components/TypeFilter.jsx";
+import FavoritesToggle from "./components/FavoritesToggle.jsx";
+import LoadingMessage from "./components/LoadingMessage.jsx";
+import ErrorMessage from "./components/ErrorMessage.jsx";
+import PartialResultsMessage from "./components/PartialResultsMessage.jsx";
 import PokemonList from "./components/PokemonList.jsx";
 
 import "./App.css";
@@ -51,6 +55,18 @@ function App() {
     });
   }, [pokemonList, search, selectedType, showFavorites, favorites]);
 
+  function handleSearchChange(value) {
+    setSearch(value);
+  }
+
+  function handleTypeChange(value) {
+    setSelectedType(value);
+  }
+
+  function handleFavoritesToggle() {
+    setShowFavorites((current) => !current);
+  }
+
   function clearFilters() {
     setSearch("");
     setSelectedType("all");
@@ -70,22 +86,19 @@ function App() {
       </header>
 
       <section className="controls" aria-label="Controles de búsqueda">
-        <SearchBar search={search} setSearch={setSearch} />
+        <SearchBar search={search} onSearchChange={handleSearchChange} />
 
         <TypeFilter
           types={types}
           selectedType={selectedType}
-          setSelectedType={setSelectedType}
+          onTypeChange={handleTypeChange}
         />
 
-        <button
-          className={`favorites-filter ${showFavorites ? "is-active" : ""}`}
-          type="button"
-          aria-pressed={showFavorites}
-          onClick={() => setShowFavorites((current) => !current)}
-        >
-          ♥ Favoritos ({favorites.length})
-        </button>
+        <FavoritesToggle
+          count={favorites.length}
+          active={showFavorites}
+          onToggle={handleFavoritesToggle}
+        />
 
         <button className="clear-button" type="button" onClick={clearFilters}>
           Limpiar filtros
@@ -101,26 +114,16 @@ function App() {
           )}
         </div>
 
-        {loading && (
-          <p className="status-message" role="status">
-            Cargando Pokémon...
-          </p>
-        )}
+        {loading && <LoadingMessage />}
 
-        {error && (
-          <div className="error-message" role="alert">
-            <p>{error}</p>
-            <button type="button" onClick={retry} disabled={loading}>
-              Volver a intentar
-            </button>
-          </div>
-        )}
+        {error && <ErrorMessage message={error} onRetry={retry} />}
 
         {!loading && !error && failedCount > 0 && (
-          <p className="partial-warning" role="status">
-            Se han podido cargar {pokemonList.length} Pokémon. No se han podido
-            obtener los datos de {failedCount}.
-          </p>
+          <PartialResultsMessage
+            loadedCount={pokemonList.length}
+            failedCount={failedCount}
+            onRetry={retry}
+          />
         )}
 
         {!loading && !error && (
