@@ -2,6 +2,7 @@ function TypeFilter({ types, selectedType, setSelectedType }) {
   return (
     <select
       className="type-select"
+      aria-label="Filtrar Pokémon por tipo"
       value={selectedType}
       onChange={(event) => setSelectedType(event.target.value)}
     >
