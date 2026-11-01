@@ -1,10 +1,10 @@
-function TypeFilter({ types, selectedType, setSelectedType }) {
+function TypeFilter({ types, selectedType, onTypeChange }) {
   return (
     <select
       className="type-select"
       aria-label="Filtrar Pokémon por tipo"
       value={selectedType}
-      onChange={(event) => setSelectedType(event.target.value)}
+      onChange={(event) => onTypeChange(event.target.value)}
     >
       <option value="all">Todos los tipos</option>
 
