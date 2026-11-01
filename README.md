@@ -2,44 +2,47 @@
 
 ## Funcionamiento básico
 
-La aplicación es una Pokédex desarrollada con React que utiliza la API pública PokéAPI para mostrar los primeros 151 Pokémon.
 
-Para utilizarla:
+Aplicación desarrollada con React que consulta PokéAPI y muestra los primeros 151 Pokémon. Permite buscar por nombre o número, filtrar por tipo y guardar Pokémon favoritos.
 
-1. Instalar las dependencias con `npm install`.
-2. Ejecutar el proyecto con `npm run dev`.
-3. Abrir en el navegador la dirección que proporciona Vite.
+Para ejecutarla en local:
 
-La aplicación permite:
-- Consultar los primeros 151 Pokémon.
-- Buscar Pokémon por nombre o número.
-- Filtrar Pokémon por tipo.
-- Consultar información como su imagen, altura, peso y ataque.
+1. Instalar dependencias con `npm install`.
+2. Iniciar el servidor con `npm run dev`.
+3. Abrir en el navegador la dirección que muestra Vite.
+
+Funciones principales:
+- Consultar los primeros 151 Pokémon y sus datos.
+- Buscar por nombre o número (también admite números con ceros iniciales, por ejemplo `#025`).
+- Filtrar por tipo.
+- Añadir y quitar Pokémon de favoritos.
+- Mantener los favoritos guardados en `localStorage` al cerrar y volver a abrir la página.
+- Volver a intentar la carga si falla la conexión.
+- Mostrar un aviso cuando alguna petición individual falla, sin descartar los Pokémon que sí se han cargado.
 
 ## Uso de IA
 
-He utilizado ChatGPT como herramienta principal de apoyo durante el desarrollo de esta misión.
+He utilizado ChatGPT como herramienta principal durante prácticamente todo el desarrollo. La IA me ha ayudado a plantear la estructura del proyecto, generar y revisar componentes de React, conectar la aplicación con PokéAPI, preparar los estilos y mejorar la gestión de estados y peticiones.
 
-La mayor parte del proyecto se ha realizado con ayuda de la IA, incluyendo la estructura de carpetas, la creación de componentes React, las peticiones a PokéAPI, la gestión de estados y los estilos CSS.
+También he utilizado ChatGPT para entender la evaluación y proponer mejoras concretas: extraer la carga de datos a un hook personalizado, añadir cancelación de peticiones y crear un sistema de favoritos persistentes.
 
-También he utilizado ChatGPT para resolver dudas y entender cómo funcionan conceptos como `useState`, `useEffect`, las props y las peticiones asíncronas.
+Ejemplos representativos de las peticiones realizadas:
 
-Mi trabajo ha consistido en integrar el código generado, organizar los archivos y adaptar el proyecto a la estructura de la misión.
+1. «Ayúdame a crear una Pokédex con React y Vite, separada en componentes reutilizables, que consuma PokéAPI y permita buscar Pokémon y filtrar por tipo».
+2. «Revisa los puntos débiles de mi evaluación de React y ayúdame a extraer la carga a un hook, gestionar los reintentos, cancelar peticiones y añadir favoritos con localStorage».
+
+He integrado las propuestas en el repositorio y revisado cómo se conectan los componentes, los hooks y el servicio de API. Para la comprobación funcional final ejecuto `npm run dev` y pruebo la carga, la búsqueda, el filtro por tipo, los favoritos, la persistencia al recargar y el botón de reintento. La mayor parte del código se ha generado con ayuda de IA; mi intervención ha consistido en dirigir los cambios, integrarlos y revisar el resultado.
 
 ## Autopsia
 
 ### 1. Promise.allSettled() en lugar de Promise.all()
 
-Para cargar los detalles de los Pokémon se utiliza `Promise.allSettled()` en grupos de 20 peticiones.
+Para obtener los detalles de los Pokémon, las peticiones se realizan en grupos de 20 y se gestionan con `Promise.allSettled()`.
 
-Una alternativa habría sido utilizar `Promise.all()`, pero esta última falla como conjunto cuando una de las peticiones es rechazada.
+La alternativa era utilizar `Promise.all()`. La descarté porque, si una de las peticiones falla, `Promise.all()` rechaza el conjunto completo. Con `Promise.allSettled()` puedo conservar los Pokémon cuyas peticiones han funcionado y contar los fallos individuales para informar al usuario.
 
-He elegido `Promise.allSettled()` porque permite conservar las peticiones que han terminado correctamente aunque alguna haya fallado. Así, un error individual no impide mostrar el resto de los Pokémon.
+### 2. Hook personalizado y cancelación con AbortController
 
-### 2. Componentes reutilizables en lugar de un único componente
+La carga y transformación de los datos está separada de la interfaz en el hook `usePokemon`. Además, el hook utiliza `AbortController` para cancelar las peticiones cuando el efecto se limpia, por ejemplo, al desmontarse el componente o al iniciar un nuevo intento.
 
-La aplicación está dividida en componentes como `SearchBar`, `TypeFilter`, `PokemonCard` y `PokemonList`.
-
-Una alternativa habría sido escribir toda la interfaz dentro de `App.jsx`. Sin embargo, dividirla permite separar responsabilidades, reutilizar partes del código y facilitar su mantenimiento.
-
-Además, se utiliza `useState` para gestionar los datos y actualizar automáticamente la interfaz cuando cambia la información.
+La alternativa era mantener toda la lógica dentro de `App.jsx` y utilizar una bandera para ignorar los resultados después del desmontaje. He elegido el hook porque separa responsabilidades y permite reutilizar la lógica; la cancelación real evita mantener peticiones innecesarias. Para los favoritos he creado otro hook, `useFavorites`, que encapsula la lectura y escritura en `localStorage`.

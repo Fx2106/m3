@@ -1,9 +1,27 @@
-function PokemonCard({ pokemon }) {
+function PokemonCard({ pokemon, isFavorite, onToggleFavorite }) {
+  const favorite = isFavorite(pokemon.id);
+
   return (
     <article className="pokemon-card">
-      <span className="pokemon-number">
-        #{String(pokemon.id).padStart(3, "0")}
-      </span>
+      <div className="pokemon-card-top">
+        <span className="pokemon-number">
+          #{String(pokemon.id).padStart(3, "0")}
+        </span>
+
+        <button
+          className={`favorite-button ${favorite ? "is-favorite" : ""}`}
+          type="button"
+          aria-label={
+            favorite
+              ? `Quitar a ${pokemon.name} de favoritos`
+              : `Añadir a ${pokemon.name} a favoritos`
+          }
+          aria-pressed={favorite}
+          onClick={() => onToggleFavorite(pokemon.id)}
+        >
+          <span aria-hidden="true">{favorite ? "♥" : "♡"}</span>
+        </button>
+      </div>
 
       <div className="pokemon-image-container">
         <img
