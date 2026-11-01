@@ -274,3 +274,80 @@ footer {
     height: 110px;
   }
 }
+
+/* Acciones nuevas de las tarjetas y filtros */
+.pokemon-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.pokemon-card-top .pokemon-number {
+  text-align: left;
+}
+
+.favorite-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: #a6a9bb;
+  background: #303448;
+  border: 1px solid #ffffff18;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.favorite-button:hover {
+  color: #ff8da1;
+  transform: scale(1.08);
+}
+
+.favorite-button.is-favorite {
+  color: #ff6b86;
+  background: #ff6b861c;
+  border-color: #ff6b8660;
+}
+
+.favorites-filter {
+  padding: 12px 17px;
+  color: #f4f5fa;
+  background: #303448;
+  border: 1px solid #ffffff18;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.favorites-filter:hover,
+.favorites-filter.is-active {
+  color: #ff8da1;
+  background: #ff6b861c;
+  border-color: #ff6b8660;
+}
+
+.partial-warning {
+  margin: 0 0 18px;
+  padding: 12px 15px;
+  color: #f4d58a;
+  background: #4b3d1c;
+  border: 1px solid #ffcb0540;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #ffcb05;
+  outline-offset: 3px;
+}
+
+@media (max-width: 620px) {
+  .favorites-filter {
+    width: 100%;
+  }
+}
